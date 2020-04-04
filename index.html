@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title></title>
+
+		<style>
+			#sapper {
+				margin:0 auto;
+				width:50%;
+			}
+
+			table {
+				border:1px solid black;
+			}
+
+			td {
+				width:45px;
+				height:45px;
+				border:1px solid black;
+				text-align:center;
+			}
+
+			.open {
+				background-color:#F0F0EF;
+			}
+
+			.bomb {
+				background: red;
+			}
+
+			.finish > table > tbody {
+				background-color:#F0F0EF;
+			}
+
+			h2 {
+				text-align:center;
+			}
+		</style>
+	</head>
+		
+	<body>
+		<h2>
+			Поле 9х9, 10 мин
+		</h2>
+		<div id="sapper"></div>
+	
+		<script>
+			let sapper = document.getElementById('sapper');
+			let table = document.createElement('table');
+			let cell = '';
+			let firstClick = false;
+			let Finish = false;
+			let field = {};
+
+			// проверяем, не равно ли сумма в обьекте - 10-ти бомбам
+			// TODO доделать рандом
+			let setMine = function(obj) {
+				let counter = 0;
+
+				for(let key in obj) {
+					counter += obj[key]; 
+				}
+
+				return counter >= 10 ? 0 : Math.round(Math.random());
+			}
+
+			let checkMine = function(tr, td) {
+				if(field[table.rows[tr].cells[td].dataset.cell] === 1) {
+					return true;
+				} else {
+					return false;
+				}
+			}
+
+			let hasMine = function(target) {
+				let currTR = target.parentNode.rowIndex;
+				let currTD = target.cellIndex;
+				let mine = 0;
+
+				if(field[target.dataset.cell] === 1) {
+					if(confirm('Вы проиграли, начать заного?')) {
+						location.reload();
+					} else {
+						for(let tr of table.rows) {
+							for(td of tr.cells) {
+								if(field[td.dataset.cell] === 1) {
+									td.classList.add('bomb');
+								}
+							}
+						}
+
+						Finish = true;
+						sapper.classList.add('finish');						
+					}
+
+				} else {
+					console.log(`tr => ${currTR}, td => ${currTD}`);
+
+					// по линии слева
+					if(currTD > 0) {
+						if(checkMine(currTR, currTD-1)) {
+							mine++;
+						}
+					}
+
+					// по линии справа
+					if(currTD < 8) {
+						if(checkMine(currTR, currTD+1)) {
+							mine++;
+						}						
+					}
+
+					// сверху
+					if(currTR > 0) {
+						if(checkMine(currTR-1, currTD)) {
+							mine++;
+						}
+
+						if(currTD > 0) {
+							if(checkMine(currTR-1, currTD-1)) {
+								mine++;
+							}
+						}
+
+						if(currTD < 8) {
+							if(checkMine(currTR-1, currTD+1)) {
+								mine++;
+							}
+						}
+					}
+
+					// снизу
+					if(currTR < 8) {
+						if(checkMine(currTR+1, currTD)) {
+							mine++;
+						}
+
+						if(currTD > 0) {
+							if(checkMine(currTR+1, currTD-1)) {
+								mine++;
+							}
+						}
+
+						if(currTD < 8) {
+							if(checkMine(currTR+1, currTD+1)) {
+								mine++;
+							}
+						}
+					}
+
+					target.classList.add('open');
+					target.textContent = mine;
+				}
+
+				console.log('mine', mine);
+			}
+
+			let startGame = function() {
+				// генерируем поле с минами
+				let i = 0;
+				for (let tr = 0; tr < 9; tr++) {
+					cell += '<tr>';
+					for (let td = 0; td < 9; td++) {
+						cell += `<td data-cell="${i}"></td>`;
+
+						i++;
+					}
+					cell += '</tr>';
+				}
+
+				table.insertAdjacentHTML('beforeEnd', cell);
+				sapper.append(table);
+			}
+
+			// закрытие ячейки
+			sapper.addEventListener('click', function(e) {
+				if(Finish) return false;
+
+  				if(e.target.tagName === 'TD') {
+
+					// если первый ход сделан
+					if(!firstClick) {
+						for (let i = 0; i < 80; i++) {
+							if(i != e.target.dataset.cell) {
+								field[i] = setMine(field);
+							}
+						}
+
+						firstClick = true;
+					}
+
+					// поиск вокруг ячейки бомбы
+					hasMine(e.target);
+				}
+			});
+
+			startGame();
+		</script>
+	</body>
+</html>
